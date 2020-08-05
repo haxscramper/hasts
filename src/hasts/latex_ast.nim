@@ -62,6 +62,10 @@ func group*(delims: (string, string), body: seq[LAstNode]): LAstGroup =
 func makePlaintext*(text: string): LAstNode =
   LAstNode(kind: lnkPlaintext, plaintextStr: text)
 
+
+func makeMacroCall*(name: string): LAstNode =
+  LastNode(kind: lnkMacro, macroName: name)
+
 func makeMacroCall*(name: string, args: seq[LAstNode]): LAstNode =
   LastNode(
     kind: lnkMacro,
@@ -129,17 +133,22 @@ func toRope*(node: LAstNode): Rope =
     else:
       discard
 
+#=============================  Compilation  =============================#
 proc compileToPdf*(document: LAstNode,
                   tmpfile: string = "/tmp/latextmp.tex",
-                  compiler: LatexCompiler = lacPdflatex): void =
+                  compiler: LatexCompiler = lacPdflatex
+                  ): tuple[ok: bool, log: string] =
   let (outdir, _, _) = splitFile(tmpfile)
   tmpfile.writeFile($document.toRope())
-  shell:
-    pdflatex "-output-directory="($outdir) ($tmpfile)
+  let noMsg: set[DebugOutputKind] = {}
+  let (output, error, code) = shellVerboseErr noMsg:
+    pdflatex "-interaction=nonstopmode" "-output-directory="($outdir) ($tmpfile)
 
-  echo "done"
+  # echo code
+  result.log = output
+  result.ok = (code == 0)
 
 when isMainModule:
-  makeDocument(@[
-    makePlaintext("Hello world ee 123")
+  discard makeDocument(@[
+    makePlaintext("HHHH")
   ]).compileToPdf()
