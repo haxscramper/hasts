@@ -1,8 +1,10 @@
 import colors, options, strtabs, ropes, sequtils, strutils, strformat
-import ../helpers
+import hmisc/helpers
 # import ../halgorithm
 
-import html_ast, hprimitives
+import html_ast
+import hmisc/types/hprimitives
+import hmisc/algo/halgorithm
 
 #================================  TODO  =================================#
 #[

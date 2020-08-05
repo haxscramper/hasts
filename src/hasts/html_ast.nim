@@ -7,7 +7,7 @@ Originally implemented to generate graphviz html-like labels.
 ]##
 
 import colors, xmltree, strformat, strutils, strtabs, sequtils
-import hprimitives
+import hmisc/types/hprimitives
 
 type
   HtmlElemKind* = enum
