@@ -1,16 +1,24 @@
-import strutils, strformat, sequtils, ropes
+import strutils, strformat, sequtils, ropes, os
+import shell
 import hmisc/helpers
 
 type
+  LatexCompiler* = enum
+    lacLuaLatex
+    lacPdflatex
+    lacLatexMk
+
   LAstNodeKind* = enum
     lnkMacro
     lnkEnv
     lnkTable
     lnkPlaintext
+    lnkStmtList
 
   LAstGroup* = object
     delims*: (string, string)
-    body*: LAstNode
+    body*: seq[LAstNode]
+    sep*: string
 
   LACellAlign* = enum
     lalLeft
@@ -32,8 +40,11 @@ type
         macroName*: string
         macroArgs*: seq[LAstGroup]
       of lnkEnv:
+        envName*: string
         envBody*: seq[LAstNode]
         envArgs*: seq[LastGroup]
+      of lnkStmtList:
+        stmtList*: seq[LAstNode]
       of lnkPlaintext:
         plaintextStr*: string
       of lnkTable:
@@ -43,7 +54,10 @@ type
         tableRows*: seq[seq[LAstNode]]
 
 func makeBraceGroup*(body: LAstNode): LAstGroup =
-  LAstGroup(delims: ("{", "}"), body: body)
+  LAstGroup(delims: ("{", "}"), body: @[body])
+
+func group*(delims: (string, string), body: seq[LAstNode]): LAstGroup =
+  LAstGroup(delims: delims, body: body, sep: ",")
 
 func makePlaintext*(text: string): LAstNode =
   LAstNode(kind: lnkPlaintext, plaintextStr: text)
@@ -55,6 +69,36 @@ func makeMacroCall*(name: string, args: seq[LAstNode]): LAstNode =
     macroArgs: args.mapIt(it.makeBraceGroup())
   )
 
+
+func makeMacroCall*(name: string, args: seq[LAstGroup]): LAstNode =
+  LastNode(kind: lnkMacro, macroName: name, macroArgs: args)
+
+func makeMacroCall*(name: string, params: seq[string],
+                    arg: string): LAstNode =
+  makeMacroCall(
+    name,
+    @[
+      group(("[", "]"), params.mapIt(makePlaintext(it))),
+      group(("{", "}"), @[makePlaintext(arg)])
+    ]
+  )
+
+func makeEnv*(envname: string, body: seq[LAstNode],
+              args: seq[LAstGroup] = @[]): LAstNode =
+  LAstNode(kind: lnkEnv,
+           envBody: body,
+           envArgs: args,
+           envname: envname)
+
+func makeStmtList*(nodes: seq[LAstNode]): LAstNode =
+  LAstNode(kind: lnkStmtList, stmtList: nodes)
+
+func makeDocument*(nodes: seq[LAstNode]): LAstNode =
+  makeStmtList(@[
+    makeMacroCall("documentclass", @["a4paper", "12pt"], "article"),
+    makeEnv("document", nodes)
+  ])
+
 func `&!`(ropes: seq[Rope]): Rope = `&`(ropes)
 func concat(ropes: seq[Rope]): Rope = `&`(ropes)
 func `&!`(a: Rope; b: Rope): Rope = {.noSideEffect.}: a & b
@@ -65,7 +109,8 @@ func rope(s: string): Rope = {.noSideEffect.}: ropes.rope(s)
 
 func toRope*(node: LAstNode): Rope
 func toRope*(group: LAstGroup): Rope =
-  group.delims[0] &! group.body.toRope() &! group.delims[1]
+  group.delims[0] &! rope(group.body.mapIt(it.toRope()).join(group.sep)) &!
+  group.delims[1]
 
 func toRope*(node: LAstNode): Rope =
   case node.kind:
@@ -74,8 +119,27 @@ func toRope*(node: LAstNode): Rope =
         node.macroArgs.mapIt(it.toRope()).concat()
     of lnkPlaintext:
       return rope(node.plaintextStr)
+    of lnkEnv:
+      return rope(&"\\begin{{{node.envName}}}\n") & node.envBody.mapIt(
+        it.toRope() &! "\n"
+      ).concat() &
+        rope(&"\\end{{{node.envName}}}")
+    of lnkStmtList:
+      return node.stmtList.mapIt(it.toRope() &! "\n").concat()
     else:
       discard
 
+proc compileToPdf*(document: LAstNode,
+                  tmpfile: string = "/tmp/latextmp.tex",
+                  compiler: LatexCompiler = lacPdflatex): void =
+  let (outdir, _, _) = splitFile(tmpfile)
+  tmpfile.writeFile($document.toRope())
+  shell:
+    pdflatex "-output-directory="($outdir) ($tmpfile)
+
+  echo "done"
+
 when isMainModule:
-  echo makeMacroCall("intl", @[makePlaintext("12")]).toRope()
+  makeDocument(@[
+    makePlaintext("Hello world ee 123")
+  ]).compileToPdf()
