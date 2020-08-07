@@ -310,6 +310,7 @@ type
 
 type
   Edge* = object
+    fontname*: string
     style*: EdgeStyle
     spline*: SplineStyle
     arrowSpec*: Arrow
@@ -318,6 +319,7 @@ type
     color*: Color
     weight*: Option[float]
     minlen*: Option[float]
+    label*: Option[string]
 
 type
   GraphNodeRank* = enum
@@ -367,6 +369,9 @@ func addNode*(graph: var Graph, node: Node): void =
 
 func makeEdge*(idFrom, idTo: NodeId): Edge =
   Edge(src: idFrom, to: @[idTo])
+
+func makeEdge*(idFrom, idTo: NodeId, label: string): Edge =
+  Edge(src: idFrom, to: @[idTo], label: some(label))
 
 func makeAuxEdge*(idFrom, idTo: NodeId): Edge =
   Edge(src: idFrom, to: @[idTo], weight: some(0.0), style: edsInvis)
@@ -512,7 +517,9 @@ func toTree(edge: Edge, idshift: int, level: int = 0): DotTree =
 
   attrs.setSome("minlen", edge.minlen)
   if edge.weight.isSome(): attrs["weight"] = ($edge.weight.get())
+  if edge.label.isSome(): attrs["label"] = edge.label.get().quote()
   if edge.style != edsDefault: attrs["style"] = ($edge.style)
+  if edge.fontname.len > 0: attrs["fontname"] = edge.fontname.quote()
 
   result.origin = edge.src.addIdShift(idshift)
   result.targets = edge.to.mapIt(it.addIdShift(idshift))
@@ -552,6 +559,15 @@ func toTree(graph: Graph, idshift: int, level: int = 0): DotTree =
         kind: dtkProperty, globalProp: true,
         key: "node",
         val: styleNode.nodeAttributes.mapPairs(&"{lhs}={rhs}").join(", ")
+      )
+
+  block:
+    let styleEdge = graph.styleEdge.toTree(idshift, level + 1)
+    if styleEdge.edgeAttributes.len > 0:
+      result.elements.add DotTree(
+        kind: dtkProperty, globalProp: true,
+        key: "edge",
+        val: styleEdge.edgeAttributes.mapPairs(&"{lhs}={rhs}").join(", ")
       )
 
   if graph.topNodes.len > 0:
