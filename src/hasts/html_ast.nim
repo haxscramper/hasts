@@ -508,10 +508,10 @@ func toHtml*(strs: seq[seq[ColoredString]],
   for line in strs:
     let xml = line.toHtml(selector)
     let tmp = xml.toFlatStr(false)
-    debugecho "xml: ", xml.toFlatStr(false)
-    debugecho "line: ", line
-    debugecho "tmp: ", tmp
+    # debugecho "xml: ", xml.toFlatStr(false)
+    # debugecho "line: ", line
+    # debugecho "tmp: ", tmp
     buf.add tmp
 
   result = buf.join("\n").newHtmlPre()
-  debugecho " \e[31m---\e[39m ", result
+  # debugecho " \e[31m---\e[39m ", result

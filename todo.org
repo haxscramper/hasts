@@ -1,0 +1,14 @@
+* Integration with other tools [0/3]
+
+- [ ] #idea Read AST from json/xml to generate it in other languages?
+- [ ] Support for [[https://kevinpt.github.io/syntrax/][syntrax]] diagram generation
+
+* Graphviz AST generation [0/2]
+
+- [ ] Support presents for graph styles
+  - [ ] Square nodes with monspaced, left-aligned text
+- [ ] Support latex AST for nodes
+  - [ ] Generate math image by compiling latex code
+  - [ ] Convert latex code to 'approximate' unicode representation and
+    insert it as text
+- [ ] Support colored text from ~hmisc/types/colorstring~

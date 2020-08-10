@@ -51,15 +51,15 @@ suite "HTML ast":
   test "Convert colored chuinks":
       let text = &"""
    hello
-wer asdf {"werwer".toRed()} asdf
+wer asdf {"werwer".toRed()} 2
       as
 asd
-fa
+  fa
 sdfas
 """
       # echo text
       let colored = text.splitSGR_sep()
       let doc = colored.toHTML(false).toDocument(styling)
 
-      echo doc
+      # echo doc
       "/tmp/page.html".writeFile(doc)
