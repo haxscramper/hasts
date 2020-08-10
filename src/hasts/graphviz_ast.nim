@@ -201,7 +201,7 @@ type # Enumerations for arrows
     dtNone = "none"
 
 type
-  EdgeStyle = enum
+  EdgeStyle* = enum
     edsDefault = ""
     edsSold = "solid"
     edsDotted = "dotted"
@@ -210,7 +210,7 @@ type
     edsInvis = "invis"
     edsTapered = "tapered" # TODO NOTE
 
-  SplineStyle = enum
+  SplineStyle* = enum
     spsDefault = ""
     spsOrtho = "ortho"
     spsNone = "none"
@@ -220,7 +220,7 @@ type
     spsSplines = "spline"
 
 type
-  ClusterStyles = enum
+  ClusterStyles* = enum
     clsDefault = ""
     clsSolid = "solid"
     clsDashed = "dashed"
@@ -312,7 +312,6 @@ type
   Edge* = object
     fontname*: string
     style*: EdgeStyle
-    spline*: SplineStyle
     arrowSpec*: Arrow
     src*: NodeId
     to*: seq[NodeId]
@@ -327,6 +326,7 @@ type
     gnrSame = "same"
 
   Graph* = object
+    # spline*: SplineStyle
     styleNode*: Node
     styleEdge*: Edge
     topNodes*: seq[Node]
