@@ -5,7 +5,7 @@
 #
 # To run these tests, simply execute `nimble test`.
 
-import unittest, terminal
+import unittest, terminal, strformat
 
 import ../src/hasts/html_ast
 import hmisc/types/colorstring
@@ -14,32 +14,52 @@ import hmisc/algo/halgorithm
 func cs(str: string, fg: ForegroundColor): ColoredString =
   initColoredString(str, fg = fg)
 
-
 func cs(str: ColoredString, bg: BackgroundColor): ColoredString =
-  # result = str
-  # result.bg = bg
   str.withIt:
     it.styling.bg = bg
+
+func cs(str: ColoredString, ss: Style): ColoredString =
+  str.withIt: it.styling.style.incl ss
+
+let styling = """
+div.termline { display:flex; }
+span.term { display:inline-block; }
+span.term-fgred { color: red; }
+span.term-fggreen { color: green; }
+span.term-bgblue { background-color: blue; }
+"""
+
 
 suite "HTML ast":
   test "Convert from colored string chunks":
     let strs = @[
       "Hello world".cs(fgRed),
       "Hello world 2".cs(fgGreen),
-      "Hello world 2".cs(fgGreen).cs(bgBlue),
+      "Hello world 2".cs(fgYellow).cs(styleBright),
+      "Hello world 2".cs(fgGreen).cs(styleItalic),
     ]
 
     let doc = @[
       strs.toHTML(),
       newHtmlText("--- === ---").wrap("p"),
       strs.toHtml(false)
-    ].toDocument(
-      """
-span.term-fgred { color: red; }
-span.term-fggreen { color: green; }
-span.term-bgblue { background-color: blue; }
-"""
-    )
+    ].toDocument(styling)
 
-    echo doc
-    "/tmp/page.html".writeFile(doc)
+    # echo doc
+    # "/tmp/page.html".writeFile(doc)
+
+  test "Convert colored chuinks":
+      let text = &"""
+   hello
+wer asdf {"werwer".toRed()} asdf
+      as
+asd
+fa
+sdfas
+"""
+      # echo text
+      let colored = text.splitSGR_sep()
+      let doc = colored.toHTML(false).toDocument(styling)
+
+      echo doc
+      "/tmp/page.html".writeFile(doc)
