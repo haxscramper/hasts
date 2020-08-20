@@ -357,9 +357,11 @@ func initNode*(): Node =
 func makeDotGraph*(name: string = "G",
                    nodes: seq[Node] = @[],
                    edges: seq[Edge] = @[]): Graph =
-  Graph(nodes: nodes,
-        edges: edges,
-        styleNode: initNode())
+  Graph(
+    name: name,
+    nodes: nodes,
+    edges: edges,
+    styleNode: initNode())
 
 func addEdge*(graph: var Graph, edge: Edge): void =
   graph.edges.add edge

@@ -6,6 +6,45 @@ much edge cases as possible, and composition - instead of ropes and
 string interpolation all over the place you can use (somewhat)
 statically typed API with lots of helper functions.
 
+Most of the markup ast nodes has lots of fields - providing
+parametetric constructor functions for all of them would be really
+tedious to implement. Instead ~withIt~ template from
+[[https://github.com/haxscramper/hmisc#hmiscalgohalgorithm-documentation][hmisc/algo/halgorithm]] might be used for constructing ast element and
+setting all fields immediately.
+
+#+begin_src nim :exports both
+import hasts/graphviz_ast
+import hmisc/algo/halgorithm
+
+var g = makeDotGraph()
+g.styleNode.shape = nsaEgg
+for i in 0 .. 5:
+  g.addEdge makeEdge(i, i * 2)
+  g.addNode makeNode(i, "Position " & $i).withIt do:
+    it.height = i.float
+
+echo g
+#+end_src
+
+#+RESULTS:
+#+begin_example
+digraph G {
+  node[shape=egg];
+  t0[label="Position 0"];
+  t1[label="Position 1", height=1.0];
+  t2[label="Position 2", height=2.0];
+  t3[label="Position 3", height=3.0];
+  t4[label="Position 4", height=4.0];
+  t5[label="Position 5", height=5.0];
+  t0 -> t0;
+  t1 -> t2;
+  t2 -> t4;
+  t3 -> t6;
+  t4 -> t8;
+  t5 -> t10;
+}
+#+end_example
+
 Parially implemented (not 100% coverage, but most important parts are
 present)
 
