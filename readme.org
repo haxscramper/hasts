@@ -1,0 +1,25 @@
+#+title: readme
+
+Statically typed wrappers for various markup lanuages - grapvhiz, svg,
+openscad, latex. Allows easier generation - library takes care of as
+much edge cases as possible, and composition - instead of ropes and
+string interpolation all over the place you can use (somewhat)
+statically typed API with lots of helper functions.
+
+Parially implemented (not 100% coverage, but most important parts are
+present)
+
+- graphviz
+- openscad
+- svg
+- html
+
+WIP
+
+- latex
+- latex math
+- pandoc
+
+Most of the features in the library are implemented on as-needed
+basis. If you have any question about implementation details or API
+free to join my [[https://discord.gg/ZnBB4E][discord server]] and ask questions there.

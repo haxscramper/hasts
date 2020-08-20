@@ -294,72 +294,73 @@ proc add2*(result: var string, n: XmlNode, indent = 0, indWidth = 2,
   if n == nil: return
 
   case n.kind
-  of xnElement:
-    if indent > 0:
-      result.addIndent(indent, addNewLines)
+    of xnElement:
+      if indent > 0:
+        result.addIndent(indent, addNewLines)
 
-    let
-      addNewLines = if n.noWhitespace():
-                      false
-                    else:
-                      addNewLines
+      let
+        addNewLines = if n.noWhitespace():
+                        false
+                      else:
+                        addNewLines
 
-    result.add('<')
-    result.add(n.tag)
-    if not isNil(n.attrs):
-      for key, val in pairs(n.attrs):
-        result.add(' ')
-        result.add(key)
-        result.add("=\"")
-        if escape:
-          result.addEscapedAttr(val)
+      result.add('<')
+      result.add(n.tag)
+      if not isNil(n.attrs):
+        for key, val in pairs(n.attrs):
+          result.add(' ')
+          result.add(key)
+          result.add("=\"")
+          if escape:
+            result.addEscapedAttr(val)
+          else:
+            result.add(val)
+          result.add('"')
+
+      if n.len == 0:
+        result.add(" />")
+        return
+
+      let
+        indentNext = if n.noWhitespace():
+                       indent
+                     else:
+                       indent+indWidth
+      result.add('>')
+      let escape =
+        if n.tag == "pre":
+          false
         else:
-          result.add(val)
-        result.add('"')
+          escape
 
-    if n.len == 0:
-      result.add(" />")
-      return
+      for i in 0 ..< n.len:
+        result.add2(n[i], indentNext, indWidth, addNewLines, escape)
 
-    let
-      indentNext = if n.noWhitespace():
-                     indent
-                   else:
-                     indent+indWidth
-    result.add('>')
-    let escape =
-      if n.tag == "pre":
-        false
+      if not n.noWhitespace():
+        result.addIndent(indent, addNewLines)
+
+      result.add("</")
+      result.add(n.tag)
+      result.add(">")
+    of xnText:
+      if escape:
+        result.addEscaped(n.text)
       else:
-        escape
-
-    for i in 0 ..< n.len:
-      result.add2(n[i], indentNext, indWidth, addNewLines, escape)
-
-    if not n.noWhitespace():
-      result.addIndent(indent, addNewLines)
-
-    result.add("</")
-    result.add(n.tag)
-    result.add(">")
-  of xnText:
-    if escape:
+        result.add n.text
+        # debugecho "--- ", n.text
+    of xnComment:
+      result.add("<!-- ")
       result.addEscaped(n.text)
-    else:
-      result.add n.text
-      # debugecho "--- ", n.text
-  of xnComment:
-    result.add("<!-- ")
-    result.addEscaped(n.text)
-    result.add(" -->")
-  of xnCData:
-    result.add("<![CDATA[")
-    result.add(n.text)
-    result.add("]]>")
-  of xnEntity:
-    result.add('&')
-    result.add(n.text)
-    result.add(';')
+      result.add(" -->")
+    of xnCData:
+      result.add("<![CDATA[")
+      result.add(n.text)
+      result.add("]]>")
+    of xnEntity:
+      result.add('&')
+      result.add(n.text)
+      result.add(';')
+    # :
 
 
 
