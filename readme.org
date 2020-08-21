@@ -61,4 +61,5 @@ WIP
 
 Most of the features in the library are implemented on as-needed
 basis. If you have any question about implementation details or API
-free to join my [[https://discord.gg/ZnBB4E][discord server]] and ask questions there.
+free to join my [[https://discord.gg/hjfYJCU][discord server]] and ask
+questions there.
