@@ -59,6 +59,11 @@ WIP
 - latex math
 - pandoc
 
+* Conitribution & development
+
+- [ ] REFACTOR: use regular strings instead of ropes for AST
+  conversion.
+
 Most of the features in the library are implemented on as-needed
 basis. If you have any question about implementation details or API
 free to join my [[https://discord.gg/hjfYJCU][discord server]] and ask
