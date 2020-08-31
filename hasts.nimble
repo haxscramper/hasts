@@ -2,7 +2,7 @@
 
 version       = "0.1.0"
 author        = "haxscramper"
-description   = "AST for various languages"
+description   = "AST for various markup languages"
 license       = "Apache-2.0"
 srcDir        = "src"
 

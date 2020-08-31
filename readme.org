@@ -6,6 +6,21 @@ much edge cases as possible, and composition - instead of ropes and
 string interpolation all over the place you can use (somewhat)
 statically typed API with lots of helper functions.
 
+** Installation
+
+#+begin_src bash
+nimble install hasts
+#+end_src
+
+** Links
+
+- [[https://github.com/haxscramper/hasts][github]]
+- [[https://haxscramper.github.io/hasts-doc/src/hasts/graphviz_ast.html][documentation]]
+- [[https://nimble.directory/pkg/hasts][nimble package]]
+- [[https://discord.gg/hjfYJCU][discord server]]
+
+** Usage
+
 Most of the markup ast nodes has lots of fields - providing
 parametetric constructor functions for all of them would be really
 tedious to implement. Instead ~withIt~ template from
