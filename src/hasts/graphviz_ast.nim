@@ -1,10 +1,11 @@
-import colors, options, strtabs, ropes, sequtils, strutils, strformat
+import colors, options, strtabs, ropes, sequtils, strutils, strformat, os
 import hmisc/helpers
 # import ../halgorithm
 
 import html_ast
 import hmisc/types/hprimitives
 import hmisc/algo/halgorithm
+import hmisc/other/hshell
 
 #================================  TODO  =================================#
 #[
@@ -378,6 +379,16 @@ func makeEdge*(idFrom, idTo: NodeId, label: string): Edge =
 func makeAuxEdge*(idFrom, idTo: NodeId): Edge =
   Edge(src: idFrom, to: @[idTo], weight: some(0.0), style: edsInvis)
 
+func makeRectConsolasNode*(): Node =
+  result.fontname = "Consolas"
+  result.shape = nsaRect
+
+func applyStyle*(to: var Node, source: Node): void =
+  if source.shape != nsaDefault:
+    to.shape = source.shape
+
+  if source.fontname != "":
+    to.fontname = source.fontname
 
 func makeConstraintEdge*(idFrom, idTo: NodeId): Edge =
   Edge(
@@ -705,8 +716,8 @@ let res = Graph(
 
 # echo $res
 
-{.define(shellThrowException).}
-import shell
+# {.define(shellThrowException).}
+# import shell
 
 proc topng*(
   graph: Graph,
@@ -717,9 +728,17 @@ proc topng*(
   ## Generate file from graph
 
   tmpfile.writeFile($graph)
-  let shellcmd = &"dot -Tpng -o{tmpimage} {tmpfile}"
-  shell:
-    ($shellcmd)
-    cp ($tmpimage) ($resfile)
+
+  try:
+    discard runShell(&"dot -Tpng -o{tmpimage} {tmpfile}")
+    copyFile tmpimage, resfile
+  except ShellError:
+    printShellError()
+
+  # shell:
+  #   ($shellcmd)
+  #   cp ($tmpimage) ($resfile)
+
+
 
 # res.topng("/tmp/file.png")
