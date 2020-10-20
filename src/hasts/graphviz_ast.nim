@@ -26,49 +26,49 @@ relevant places.
 
 
 type
-  NodeId* = object
+  DotNodeId* = object
     path: seq[int]
     record: seq[int]
 
-func isRecord*(id: NodeId): bool =
+func isRecord*(id: DotNodeId): bool =
   id.record.len > 0
 
 
 
-func toStr*(id: NodeId, isRecord: bool = false): string =
+func toStr*(id: DotNodeId, isRecord: bool = false): string =
   (id.isRecord or isRecord).tern("struct", "") &
   id.path.mapIt("t" & $it).join("_") &
     (id.record.len > 0).tern(
       ":" & id.record.mapIt("t" & $it).join(":"), "")
 
-func `$`(id: NodeId): string = toStr(id)
+func `$`(id: DotNodeId): string = toStr(id)
 
 
-converter toNodeId*(id: int): NodeId =
+converter toDotNodeId*(id: int): DotNodeId =
   ## Create single node id
-  NodeId(path: @[id])
+  DotNodeId(path: @[id])
 
-converter toNodeId*(ids: seq[int]): seq[NodeId] =
+converter toDotNodeId*(ids: seq[int]): seq[DotNodeId] =
   ## Create multiple node ids
-  ids.mapIt(NodeId(path: @[it]))
+  ids.mapIt(DotNodeId(path: @[it]))
 
-converter toNodeId*[T](p: ptr T): NodeId =
-  NodeId(path: @[cast[int](p)])
+converter toDotNodeId*[T](p: ptr T): DotNodeId =
+  DotNodeId(path: @[cast[int](p)])
 
-func addIdShift*(node: NodeId, shift: int): NodeId =
+func addIdShift*(node: DotNodeId, shift: int): DotNodeId =
   result = node
   if shift != 0:
     result.path.add shift
 
-func addRecord*(node: NodeId, rec: int): NodeId =
+func addRecord*(node: DotNodeId, rec: int): DotNodeId =
   result = node
   result.record.add rec
 
-converter toNodeId*(ids: seq[seq[int]]): seq[NodeId] =
+converter toDotNodeId*(ids: seq[seq[int]]): seq[DotNodeId] =
   ## Create multile node ids for record nodes
   # debugecho ids
   # defer: debugecho result
-  ids.mapIt(NodeId(path: it))
+  ids.mapIt(DotNodeId(path: it))
 
 func quote*(input: string): string =
   input.multiReplace([
@@ -80,7 +80,7 @@ func quote*(input: string): string =
 
 
 type
-  NodeShape* = enum
+  DotNodeShape* = enum
     # Copied from https://graphviz.org/doc/info/shapes.html
     # (Polygon-based models) and converted using
     # `xclip -out | tr '\t' '\n' | sort | uniq | perl -pne 's/^(.*)$/nsa\u$1 = "$1"/' > /tmp/res.txt`
@@ -149,7 +149,7 @@ type
     nsaUnderline = "underline"
     nsaUtr = "utr"
 
-  NodeStyle* = enum
+  DotNodeStyle* = enum
     ## The style attribute can be used to modify the appearance of a node.
 
     nstDefault = "" ## No explicitly specified style
@@ -164,7 +164,7 @@ type
     nstWedged = "wedged"
     nstStriped = "filled"
 
-  NodeLabelAlign* = enum
+  DotNodeLabelAlign* = enum
     nlaDefault = "\\n"
 
     nlaLeft = "\\l"
@@ -202,7 +202,7 @@ type # Enumerations for arrows
     dtNone = "none"
 
 type
-  EdgeStyle* = enum
+  DotEdgeStyle* = enum
     edsDefault = ""
     edsSold = "solid"
     edsDotted = "dotted"
@@ -234,13 +234,13 @@ type
 
 type
   RecordField = object
-    id*: NodeId ## Record field id
+    id*: DotNodeId ## Record field id
     text*: string ## Text in record field
     # REVIEW allow use of html directly?
     vertical*: bool ## Orientation direction
     subfields*: seq[RecordField]
 
-  Node* = object
+  DotNode* = object
     ##[
 
 ## Fields
@@ -257,11 +257,11 @@ type
    weights specifying how much of region is filled with each color.
 
     ]##
-    id*: NodeId
+    id*: DotNodeId
     width*: float
     height*: float
     fontname*: string
-    case style: NodeStyle
+    case style: DotNodeStyle
       # NOTE not clear what happens with 'filled' node that uses color
       # list
       of nstStriped, nstWedged:
@@ -272,9 +272,9 @@ type
         gradientAngle*: int
         isRadial*: bool ## Two fill styles: linear and radial.
       else:
-        color*: Color ## Node color
+        color*: Color ## DotNode color
 
-    case shape*: NodeShape
+    case shape*: DotNodeShape
       of nsaRecord, nsaMRecord:
         # NOTE top-level record is always horizontal (?)
         flds*: seq[RecordField]
@@ -282,8 +282,8 @@ type
         htmlLabel*: HtmlElem
       else:
         labelLeftPad*: string
-        labelAlign*: NodeLabelAlign
-        label*: Option[string] ## Node label
+        labelAlign*: DotNodeLabelAlign
+        label*: Option[string] ## DotNode label
 
 type
   Arrow* = object
@@ -310,29 +310,29 @@ type
     ] ## Arrow shapes [1]
 
 type
-  Edge* = object
+  DotEdge* = object
     fontname*: string
-    style*: EdgeStyle
+    style*: DotEdgeStyle
     arrowSpec*: Arrow
-    src*: NodeId
-    to*: seq[NodeId]
+    src*: DotNodeId
+    to*: seq[DotNodeId]
     color*: Color
     weight*: Option[float]
     minlen*: Option[float]
     label*: Option[string]
 
 type
-  GraphNodeRank* = enum
+  DotGraphNodeRank* = enum
     gnrDefault = ""
     gnrSame = "same"
 
-  Graph* = object
+  DotGraph* = object
     # spline*: SplineStyle
-    styleNode*: Node
-    styleEdge*: Edge
-    topNodes*: seq[Node]
+    styleNode*: DotNode
+    styleEdge*: DotEdge
+    topNodes*: seq[DotNode]
 
-    noderank*: GraphNodeRank
+    noderank*: DotGraphNodeRank
     isUndirected*: bool
 
     # Cluster graph
@@ -347,51 +347,51 @@ type
     fontcolor*: Color
     splines*: SplineStyle
 
-    subgraphs*: seq[Graph]
-    nodes*: seq[Node]
-    edges*: seq[Edge]
+    subgraphs*: seq[DotGraph]
+    nodes*: seq[DotNode]
+    edges*: seq[DotEdge]
 
 #============================  constructors  =============================#
-func initNode*(): Node =
-  Node(color: colNoColor, style: nstDefault)
+func initDotNode*(): DotNode =
+  DotNode(color: colNoColor, style: nstDefault)
 
 func makeDotGraph*(name: string = "G",
-                   nodes: seq[Node] = @[],
-                   edges: seq[Edge] = @[]): Graph =
-  Graph(
+                   nodes: seq[DotNode] = @[],
+                   edges: seq[DotEdge] = @[]): DotGraph =
+  DotGraph(
     name: name,
     nodes: nodes,
     edges: edges,
-    styleNode: initNode())
+    styleNode: initDotNode())
 
-func addEdge*(graph: var Graph, edge: Edge): void =
+func addEdge*(graph: var DotGraph, edge: DotEdge): void =
   graph.edges.add edge
 
-func addNode*(graph: var Graph, node: Node): void =
+func addNode*(graph: var DotGraph, node: DotNode): void =
   graph.nodes.add node
 
-func makeEdge*(idFrom, idTo: NodeId): Edge =
-  Edge(src: idFrom, to: @[idTo])
+func makeDotEdge*(idFrom, idTo: DotNodeId): DotEdge =
+  DotEdge(src: idFrom, to: @[idTo])
 
-func makeEdge*(idFrom, idTo: NodeId, label: string): Edge =
-  Edge(src: idFrom, to: @[idTo], label: some(label))
+func makeDotEdge*(idFrom, idTo: DotNodeId, label: string): DotEdge =
+  DotEdge(src: idFrom, to: @[idTo], label: some(label))
 
-func makeAuxEdge*(idFrom, idTo: NodeId): Edge =
-  Edge(src: idFrom, to: @[idTo], weight: some(0.0), style: edsInvis)
+func makeAuxEdge*(idFrom, idTo: DotNodeId): DotEdge =
+  DotEdge(src: idFrom, to: @[idTo], weight: some(0.0), style: edsInvis)
 
-func makeRectConsolasNode*(): Node =
+func makeRectConsolasNode*(): DotNode =
   result.fontname = "Consolas"
   result.shape = nsaRect
 
-func applyStyle*(to: var Node, source: Node): void =
+func applyStyle*(to: var DotNode, source: DotNode): void =
   if source.shape != nsaDefault:
     to.shape = source.shape
 
   if source.fontname != "":
     to.fontname = source.fontname
 
-func makeConstraintEdge*(idFrom, idTo: NodeId): Edge =
-  Edge(
+func makeConstraintEdge*(idFrom, idTo: DotNodeId): DotEdge =
+  DotEdge(
     src: idFrom,
     to: @[idTo],
     weight: some(1000.0),
@@ -399,26 +399,26 @@ func makeConstraintEdge*(idFrom, idTo: NodeId): Edge =
     # minlen: some(0.0)
   )
 
-func addSubgraph*(graph: var Graph, subg: Graph): void =
+func addSubgraph*(graph: var DotGraph, subg: DotGraph): void =
   graph.subgraphs.add subg
 
 
 
-func makeNode*(
-  id: NodeId,
+func makeDotNode*(
+  id: DotNodeId,
   label: string,
-  shape: NodeShape = nsaDefault,
+  shape: DotNodeShape = nsaDefault,
   color: Color = colNoColor,
-  style: NodeStyle = nstDefault,
+  style: DotNodeStyle = nstDefault,
   width: float = -1.0,
-  height: float = -1.0): Node =
-  result = Node(shape: shape, style: style)
+  height: float = -1.0): DotNode =
+  result = DotNode(shape: shape, style: style)
   result.id = id
   result.label = some(label)
   result.color = color
 
-func makeNode*(id: NodeId, html: HtmlElem): Node =
-  Node(id: id, shape: nsaPlaintext, htmlLabel: html)
+func makeDotNode*(id: DotNodeId, html: HtmlElem): DotNode =
+  DotNode(id: id, shape: nsaPlaintext, htmlLabel: html)
 
 
 type
@@ -436,8 +436,8 @@ type
         nodeId: string
         nodeAttributes: StringTableRef
       of dtkEdgeDef:
-        origin: NodeId
-        targets: seq[NodeId]
+        origin: DotNodeId
+        targets: seq[DotNodeId]
         edgeAttributes: StringTableRef
       of dtkProperty:
         key, val: string
@@ -452,7 +452,7 @@ func toString(record: RecordField): string =
   # TODO keep track of graph direction to ensure correct rotation
   &"<{record.id}>{record.text}"
 
-func toTree(node: Node, idshift: int, level: int = 0): DotTree =
+func toTree(node: DotNode, idshift: int, level: int = 0): DotTree =
   var attr = newStringTable()
   result = DotTree(kind: dtkNodeDef)
   result.nodeId = node.id.addIdShift(idshift).toStr(
@@ -519,7 +519,7 @@ func setSome[T](
   if val.isSome():
     table[name] = $val.get
 
-func toTree(edge: Edge, idshift: int, level: int = 0): DotTree =
+func toTree(edge: DotEdge, idshift: int, level: int = 0): DotTree =
   result = DotTree(kind: dtkEdgeDef)
   var attrs = newStringTable()
 
@@ -546,7 +546,7 @@ func toTree(attrs: StringTableRef): seq[DotTree] =
   for key, val in attrs:
     result.add DotTree(kind: dtkProperty, key: key, val: val)
 
-func toTree(graph: Graph, idshift: int, level: int = 0): DotTree =
+func toTree(graph: DotGraph, idshift: int, level: int = 0): DotTree =
   result = DotTree(kind: dtkSubgraph)
   var attrs = newStringTable()
 
@@ -584,14 +584,14 @@ func toTree(graph: Graph, idshift: int, level: int = 0): DotTree =
       )
 
   if graph.topNodes.len > 0:
-    var nodeIds: seq[NodeId]
+    var nodeIds: seq[DotNodeId]
     for node in graph.topNodes:
       let tree = node.toTree(idshift, level + 1)
       result.elements.add tree
       nodeIds.add node.id
 
     block:
-      var prevId: NodeId = nodeIds[0]
+      var prevId: DotNodeId = nodeIds[0]
       for nodeId in nodeIds[1..^1]:
         result.elements.add toTreeComment("Constraint edge idshift:", idshift)
 
@@ -676,18 +676,18 @@ proc toRope(tree: DotTree, level: int = 0): Rope =
         else:
           rope(&"{pref}{tree.origin} -> {rhs}[{attrs}];")
 
-proc `$`*(graph: Graph): string =
+proc `$`*(graph: DotGraph): string =
   $graph.toTree(graph.idshift).toRope()
 
 #===============================  testing  ===============================#
 
-let res = Graph(
+let res = DotGraph(
   name: "G",
   nodes: @[
-    Node(id: 12),
-    Node(id: 25),
-    Node(id: 23),
-    Node(
+    DotNode(id: 12),
+    DotNode(id: 25),
+    DotNode(id: 23),
+    DotNode(
       id: 77,
       shape: nsaRecord,
       flds: @[
@@ -698,17 +698,17 @@ let res = Graph(
     )
   ],
   edges: @[
-    Edge(src: 12, to: @[23, 25]),
-    Edge(src: 999, to: @[@[77, 8], @[77, 9], @[77, 10], @[25]]),
-    Edge(src: 999, to: @[77, 12], color: colGreen)
+    DotEdge(src: 12, to: @[23, 25]),
+    DotEdge(src: 999, to: @[@[77, 8], @[77, 9], @[77, 10], @[25]]),
+    DotEdge(src: 999, to: @[77, 12], color: colGreen)
   ],
   subgraphs: @[
-    Graph(
+    DotGraph(
       name: "ZZ",
       idshift: 8880000,
       isCluster: true,
       nodes: @[
-        Node(id: 999)
+        DotNode(id: 999)
       ]
     )
   ]
@@ -720,7 +720,7 @@ let res = Graph(
 # import shell
 
 proc topng*(
-  graph: Graph,
+  graph: DotGraph,
   resfile: string,
   tmpfile: string = "/tmp/dot-file.dot",
   tmpimage: string = "/tmp/dot-image-tmp.png"
@@ -730,14 +730,15 @@ proc topng*(
   tmpfile.writeFile($graph)
 
   try:
-    discard runShell(&"dot -Tpng -o{tmpimage} {tmpfile}")
+    discard runShell makeGnuShellCmd("dot").withIt do:
+      it.opt "T", "png"
+      it.opt "o", tmpimage
+      it.arg tmpfile
+
+
     copyFile tmpimage, resfile
   except ShellError:
     printShellError()
-
-  # shell:
-  #   ($shellcmd)
-  #   cp ($tmpimage) ($resfile)
 
 
 
