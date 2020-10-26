@@ -547,12 +547,13 @@ type
     ## immediately when a page is loaded but may be instantiated
     ## subsequently during runtime using JavaScript.
 
-  HtmlNode* = object
+  HtmlNode* = ref object
     kind*: HtmlNodeKind
     text*: string
     subn*: seq[HtmlNode]
 
 func add*(node: var HtmlNode, subn: HtmlNode) = node.subn.add subn
+func add*(node: var HtmlNode, text: string) = node.text.add text
 
 func render*(inNode: HtmlNode): string =
   func aux(node: HtmlNode, level: int): seq[string] =
@@ -567,9 +568,14 @@ func render*(inNode: HtmlNode): string =
 
   return aux(inNode, 0).join("\n")
 
-let tree = makeTree(HtmlNode):
-  h1:
-    b(text: "test")
+template newHtml(body: untyped): untyped =
+  makeTree(HtmlNode):
+    body
 
-echo tree
+let tree = newHtml:
+  h1:
+    h1: b: "text"
+    h2:
+      b(text: "Nice")
+
 echo tree.render

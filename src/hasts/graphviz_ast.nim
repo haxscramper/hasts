@@ -211,7 +211,7 @@ type
     edsInvis = "invis"
     edsTapered = "tapered" # TODO NOTE
 
-  SplineStyle* = enum
+  DotSplineStyle* = enum
     spsDefault = ""
     spsOrtho = "ortho"
     spsNone = "none"
@@ -326,8 +326,14 @@ type
     gnrDefault = ""
     gnrSame = "same"
 
+  DotGraphRankDir* = enum
+    grdDefault = ""
+    grdTopBottom = "TB"
+    grdLeftRight = "LR"
+
   DotGraph* = object
     # spline*: SplineStyle
+    rankdir*: DotGraphRankDir
     styleNode*: DotNode
     styleEdge*: DotEdge
     topNodes*: seq[DotNode]
@@ -345,7 +351,7 @@ type
     labelOnBottom*: bool
     fontsize*: int
     fontcolor*: Color
-    splines*: SplineStyle
+    splines*: DotSplineStyle
 
     subgraphs*: seq[DotGraph]
     nodes*: seq[DotNode]
@@ -563,6 +569,7 @@ func toTree(graph: DotGraph, idshift: int, level: int = 0): DotTree =
   if graph.isCluster: result.section.add &"cluster_{graph.name}"
   if graph.splines != spsDefault: attrs["splines"] = $graph.splines
   if graph.noderank != gnrDefault: attrs["rank"] = $graph.noderank
+  if graph.rankdir != grdDefault: attrs["rankdir"] = $graph.rankdir
 
   result.elements &= toTree(attrs)
   block:
@@ -719,6 +726,7 @@ let res = DotGraph(
 # {.define(shellThrowException).}
 # import shell
 
+# FIXME use `AbsFile` etc.
 proc topng*(
   graph: DotGraph,
   resfile: string,
@@ -731,8 +739,8 @@ proc topng*(
 
   try:
     discard runShell makeGnuShellCmd("dot").withIt do:
-      it.opt "T", "png"
-      it.opt "o", tmpimage
+      it - ("T", "", "png")
+      it - ("o", "", tmpimage)
       it.arg tmpfile
 
 
@@ -740,6 +748,20 @@ proc topng*(
   except ShellError:
     printShellError()
 
+import hmisc/other/oswrap
 
+proc toXDot*(
+  graph: DotGraph,
+  resfile: AbsFile,
+  tmpfile: AbsFile = AbsFile "/tmp/dot-file.dot"
+           ): void =
+  ## Generate file from graph
+
+  tmpfile.writeFile($graph)
+
+  discard runShell makeGnuShellCmd("dot").withIt do:
+    it - ("T", "", "xdot")
+    it - ("o", "", $resfile)
+    it.arg tmpfile
 
 # res.topng("/tmp/file.png")

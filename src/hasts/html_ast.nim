@@ -360,7 +360,8 @@ proc add2*(result: var string, n: XmlNode, indent = 0, indWidth = 2,
       result.add('&')
       result.add(n.text)
       result.add(';')
-    # :
+    of xnVerbatimText:
+      result.add(n.text)
 
 
 
