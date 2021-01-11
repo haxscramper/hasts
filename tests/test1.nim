@@ -7,7 +7,7 @@
 
 import unittest, terminal, strformat
 
-import ../src/hasts/html_ast
+import ../src/hasts/[html_ast, graphviz_ast]
 import hmisc/types/colorstring
 import hmisc/algo/halgorithm
 

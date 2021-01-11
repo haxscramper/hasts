@@ -1,4 +1,6 @@
-import colors, options, strtabs, ropes, sequtils, strutils, strformat, os
+import std/[colors, options, strtabs, ropes, sequtils,
+            strutils, strformat, os, hashes]
+
 import hmisc/helpers
 # import ../halgorithm
 
@@ -33,13 +35,14 @@ type
 func isRecord*(id: DotNodeId): bool =
   id.record.len > 0
 
-
+func isEmpty*(id: DotNodeId): bool  =
+  id.path.len == 0 and id.record.len == 0
 
 func toStr*(id: DotNodeId, isRecord: bool = false): string =
   (id.isRecord or isRecord).tern("struct", "") &
-  id.path.mapIt("t" & $it).join("_") &
+  id.path.mapIt("t" & replace($it, "-", "neg")).join("_") &
     (id.record.len > 0).tern(
-      ":" & id.record.mapIt("t" & $it).join(":"), "")
+      ":" & id.record.mapIt("t" & replace($it, "-", "neg")).join(":"), "")
 
 func `$`(id: DotNodeId): string = toStr(id)
 
@@ -47,6 +50,9 @@ func `$`(id: DotNodeId): string = toStr(id)
 converter toDotNodeId*(id: int): DotNodeId =
   ## Create single node id
   DotNodeId(path: @[id])
+
+converter toDotNodeId*(hash: Hash): DotNodeId =
+  DotNodeId(path: @[hash.int])
 
 converter toDotNodeId*(ids: seq[int]): seq[DotNodeId] =
   ## Create multiple node ids
@@ -261,7 +267,7 @@ type
     width*: float
     height*: float
     fontname*: string
-    case style: DotNodeStyle
+    case style*: DotNodeStyle
       # NOTE not clear what happens with 'filled' node that uses color
       # list
       of nstStriped, nstWedged:
@@ -272,7 +278,7 @@ type
         gradientAngle*: int
         isRadial*: bool ## Two fill styles: linear and radial.
       else:
-        color*: Color ## DotNode color
+        color*: Option[Color] ## DotNode color
 
     case shape*: DotNodeShape
       of nsaRecord, nsaMRecord:
@@ -358,8 +364,7 @@ type
     edges*: seq[DotEdge]
 
 #============================  constructors  =============================#
-func initDotNode*(): DotNode =
-  DotNode(color: colNoColor, style: nstDefault)
+func initDotNode*(): DotNode = DotNode(style: nstDefault)
 
 func makeDotGraph*(name: string = "G",
                    nodes: seq[DotNode] = @[],
@@ -421,7 +426,7 @@ func makeDotNode*(
   result = DotNode(shape: shape, style: style)
   result.id = id
   result.label = some(label)
-  result.color = color
+  result.color = some(color)
 
 func makeDotNode*(id: DotNodeId, html: HtmlElem): DotNode =
   DotNode(id: id, shape: nsaPlaintext, htmlLabel: html)
@@ -481,8 +486,8 @@ func toTree(node: DotNode, idshift: int, level: int = 0): DotTree =
         attr["style"] = $node.style
 
       if node.shape != nsaPlaintext:
-        if node.color != colNoColor:
-          attr["color"] = ($node.color).quote()
+        if node.color.isSome():
+          attr["color"] = ($node.color.get()).quote()
 
   case node.shape:
     of nsaRecord, nsaMRecord:
@@ -751,10 +756,10 @@ proc topng*(
 import hmisc/other/oswrap
 
 proc toXDot*(
-  graph: DotGraph,
-  resfile: AbsFile,
-  tmpfile: AbsFile = AbsFile "/tmp/dot-file.dot"
-           ): void =
+    graph: DotGraph,
+    resfile: AbsFile,
+    tmpfile: AbsFile = AbsFile "/tmp/dot-file.dot"
+  ): void =
   ## Generate file from graph
 
   tmpfile.writeFile($graph)

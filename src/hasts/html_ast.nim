@@ -266,19 +266,20 @@ macro condIncl*(rtype, body: untyped): untyped =
       `resn`
 
 
-proc addIndent*(result: var string, indent: int, addNewLines: bool) =
-  if addNewLines:
-    result.add("\n")
-  for i in 1 .. indent:
-    result.add(' ')
+# proc addIndent*(result: var string, indent: int, addNewLines: bool) =
+#   if addNewLines:
+#     result.add("\n")
+#   for i in 1 .. indent:
+#     result.add(' ')
 
-proc add2*(result: var string, n: XmlNode, indent = 0, indWidth = 2,
+proc add2*(result: var string, n: XmlNode, level = 0, indWidth = 2,
           addNewLines = true,
           escape: bool = true) =
   ## Adds the textual representation of `n` to string `result`.
   proc noWhitespace(n: XmlNode): bool =
     for i in 0 ..< n.len:
-      if n[i].kind in {xnText, xnEntity}: return true
+      if n[i].kind in {xnText, xnEntity}:
+        return true
 
   proc addEscapedAttr(result: var string, s: string) =
     # `addEscaped` alternative with less escaped characters.
@@ -295,8 +296,9 @@ proc add2*(result: var string, n: XmlNode, indent = 0, indWidth = 2,
 
   case n.kind
     of xnElement:
-      if indent > 0:
-        result.addIndent(indent, addNewLines)
+      let pref = " ".repeat(level * indWidth)
+      # if indent > 0:
+      #   result.addIndent(indent, addNewLines)
 
       let
         addNewLines = if n.noWhitespace():
@@ -304,8 +306,7 @@ proc add2*(result: var string, n: XmlNode, indent = 0, indWidth = 2,
                       else:
                         addNewLines
 
-      result.add('<')
-      result.add(n.tag)
+      result.add(pref & '<' & n.tag)
       if not isNil(n.attrs):
         for key, val in pairs(n.attrs):
           result.add(' ')
@@ -319,14 +320,21 @@ proc add2*(result: var string, n: XmlNode, indent = 0, indWidth = 2,
 
       if n.len == 0:
         result.add(" />")
+        if addNewlines:
+          result.add("\n")
+
         return
 
-      let
-        indentNext = if n.noWhitespace():
-                       indent
-                     else:
-                       indent+indWidth
-      result.add('>')
+      # let
+      #   indentNext = if n.noWhitespace():
+      #                  indent
+      #                else:
+      #                  indent+indWidth
+
+      result.add(">")
+      if addNewlines:
+        result.add("\n")
+
       let escape =
         if n.tag == "pre":
           false
@@ -334,14 +342,17 @@ proc add2*(result: var string, n: XmlNode, indent = 0, indWidth = 2,
           escape
 
       for i in 0 ..< n.len:
-        result.add2(n[i], indentNext, indWidth, addNewLines, escape)
+        result.add2(n[i], level + 1, indWidth,
+                    addNewlines = addNewLines, escape)
+        # if addNewlines:
+        #   result.add("\n")
 
-      if not n.noWhitespace():
-        result.addIndent(indent, addNewLines)
+      # if not n.noWhitespace():
+      #   result.addIndent(indent, addNewLines)
 
-      result.add("</")
-      result.add(n.tag)
-      result.add(">")
+      result.add(pref & "</" & n.tag & ">")
+      # if addNewlines:
+      #   result.add("\n")
     of xnText:
       if escape:
         result.addEscaped(n.text)
