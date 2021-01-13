@@ -47,12 +47,16 @@ func toStr*(id: DotNodeId, isRecord: bool = false): string =
 func `$`(id: DotNodeId): string = toStr(id)
 
 
-converter toDotNodeId*(id: int): DotNodeId =
-  ## Create single node id
-  DotNodeId(path: @[id])
+# converter toDotNodeId*(id: int): DotNodeId =
+#   ## Create single node id
+#   DotNodeId(path: @[id])
 
-converter toDotNodeId*(hash: Hash): DotNodeId =
-  DotNodeId(path: @[hash.int])
+converter toDotNodeId*(hash: Hash | int): DotNodeId =
+  when hash is int:
+    DotNodeId(path: @[hash])
+
+  else:
+    DotNodeId(path: @[hash.int])
 
 converter toDotNodeId*(ids: seq[int]): seq[DotNodeId] =
   ## Create multiple node ids
