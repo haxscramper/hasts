@@ -6,8 +6,8 @@ Originally implemented to generate graphviz html-like labels.
 
 ]##
 
-import colors, xmltree, strformat, strutils, strtabs, sequtils, terminal,
-       macros
+import std/[colors, xmltree, strformat, strutils, strtabs, sequtils, terminal,
+       macros, options]
 import hmisc/[helpers, hexceptions]
 import hmisc/types/[hprimitives, colorstring]
 
@@ -29,7 +29,7 @@ type
     htpItalic
 
 
-  HtmlElem* = object
+  HtmlElem* = ref object
     elements*: seq[HtmlElem]
     attrs*: StringTableRef
     class*: seq[string]
@@ -71,7 +71,7 @@ func `[]=`*(html: var HtmlElem, attrname: string, attrval: string): void =
   # debugecho "set ", attrname, " as ", attrval
   html.attrs[attrname] = attrval
 
-func add*(html: var HtmlElem, other: HtmlElem): void =
+func add*(html: var HtmlElem, other: HtmlElem | seq[HtmlElem]): void =
   assert html.kind notin {hekText}
   html.elements.add other
 
@@ -107,6 +107,15 @@ func newHtmlText*(text: string): HtmlElem =
 func newHtmlPre*(text: string): HtmlElem =
   HtmlElem(kind: hekOther, tagname: "pre", elements: @[newHtmlText(text)])
 
+
+func newHtmlCode*(text: string): HtmlElem =
+  HtmlElem(kind: hekOther, tagname: "code", elements: @[
+    HtmlElem(kind: hekOther, tagname: "pre", elements: @[
+      newHtmlText(text)
+    ])
+  ])
+
+
 func newTree*(tag: string,
              subitems: openarray[HtmlElem],
              attrs: openarray[(string, string)] = @[]): HtmlElem =
@@ -117,6 +126,18 @@ func newTree*(tag: string,
 
   # for attr in attrs:
   result.attrs = attrs.toXmlAttributes()
+
+func newHtmlLink*(
+    target: string,
+    description: Option[seq[HtmlElem]] = none(seq[HtmlElem])
+  ): HtmlElem =
+
+  if description.isNone():
+    result = newTree("a", @[], {"href" : target})
+
+  else:
+    result = newTree("a", description.get(), {"href" : target})
+
 
 func newTree(subitems: seq[HtmlElem]): HtmlElem =
   HtmlElem(kind: hekElemList, elements: subitems)
@@ -272,7 +293,7 @@ macro condIncl*(rtype, body: untyped): untyped =
 #   for i in 1 .. indent:
 #     result.add(' ')
 
-proc add2*(result: var string, n: XmlNode, level = 0, indWidth = 2,
+func add2*(result: var string, n: XmlNode, level = 0, indWidth = 2,
           addNewLines = true,
           escape: bool = true) =
   ## Adds the textual representation of `n` to string `result`.
@@ -281,7 +302,7 @@ proc add2*(result: var string, n: XmlNode, level = 0, indWidth = 2,
       if n[i].kind in {xnText, xnEntity}:
         return true
 
-  proc addEscapedAttr(result: var string, s: string) =
+  func addEscapedAttr(result: var string, s: string) =
     # `addEscaped` alternative with less escaped characters.
     # Only to be used for escaping attribute values enclosed in double quotes!
     for c in items(s):
@@ -297,15 +318,6 @@ proc add2*(result: var string, n: XmlNode, level = 0, indWidth = 2,
   case n.kind
     of xnElement:
       let pref = " ".repeat(level * indWidth)
-      # if indent > 0:
-      #   result.addIndent(indent, addNewLines)
-
-      let
-        addNewLines = if n.noWhitespace():
-                        false
-                      else:
-                        addNewLines
-
       result.add(pref & '<' & n.tag)
       if not isNil(n.attrs):
         for key, val in pairs(n.attrs):
@@ -320,39 +332,47 @@ proc add2*(result: var string, n: XmlNode, level = 0, indWidth = 2,
 
       if n.len == 0:
         result.add(" />")
+
+      elif n.len == 1 and
+           n[0].len == 0 and
+           (n[0].kind != xnElement or n[0].tag != "pre")
+        :
+
+        result.add(">")
+        result.add2(n[0], 0, indWidth, false, escape)
+        result.add("</" & n.tag & ">")
+
+      elif n.len == 1 and
+           n[0].len == 1 and
+           n[0][0].len == 0 and
+           (n[0].kind != xnElement or n[0].tag != "pre") and
+           (n[0][0].kind != xnElement or n[0][0].tag != "pre")
+        :
+
+        result.add(">")
+        result.add("<" & n[0].tag & ">")
+
+        result.add2(n[0][0], 0, indWidth, false, escape)
+
+        result.add("</" & n[0].tag & ">")
+        result.add("</" & n.tag & ">")
+
+      else:
+        result.add(">")
         if addNewlines:
           result.add("\n")
 
-        return
+        let addNewLines = addNewlines and (not n.noWhitespace())
 
-      # let
-      #   indentNext = if n.noWhitespace():
-      #                  indent
-      #                else:
-      #                  indent+indWidth
+        for i in 0 ..< n.len:
+          let escape = escape and (n[i].kind == xnElement and n[i].tag != "pre")
+          result.add2(n[i], level + 1, indWidth, addNewlines, escape)
 
-      result.add(">")
+        result.add(pref & "</" & n.tag & ">")
+
       if addNewlines:
         result.add("\n")
 
-      let escape =
-        if n.tag == "pre":
-          false
-        else:
-          escape
-
-      for i in 0 ..< n.len:
-        result.add2(n[i], level + 1, indWidth,
-                    addNewlines = addNewLines, escape)
-        # if addNewlines:
-        #   result.add("\n")
-
-      # if not n.noWhitespace():
-      #   result.addIndent(indent, addNewLines)
-
-      result.add(pref & "</" & n.tag & ">")
-      # if addNewlines:
-      #   result.add("\n")
     of xnText:
       if escape:
         result.addEscaped(n.text)
@@ -363,14 +383,17 @@ proc add2*(result: var string, n: XmlNode, level = 0, indWidth = 2,
       result.add("<!-- ")
       result.addEscaped(n.text)
       result.add(" -->")
+
     of xnCData:
       result.add("<![CDATA[")
       result.add(n.text)
       result.add("]]>")
+
     of xnEntity:
       result.add('&')
       result.add(n.text)
       result.add(';')
+
     of xnVerbatimText:
       result.add(n.text)
 
@@ -495,6 +518,7 @@ func toHTML*(str: ColoredString, selector: bool = true): HtmlElem =
           [styleItalic in str.styling, htpItalic]
           [styleUnderscore in str.styling, htpUnderline]
     )
+
   else:
     result = newHtmlText(str.str)
     result.textColor = case str.fg:
@@ -521,10 +545,6 @@ func toHtml*(strs: seq[seq[ColoredString]],
   for line in strs:
     let xml = line.toHtml(selector)
     let tmp = xml.toFlatStr(false)
-    # debugecho "xml: ", xml.toFlatStr(false)
-    # debugecho "line: ", line
-    # debugecho "tmp: ", tmp
     buf.add tmp
 
   result = buf.join("\n").newHtmlPre()
-  # debugecho " \e[31m---\e[39m ", result
