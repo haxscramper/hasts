@@ -17,7 +17,6 @@ nimble install hasts
 - [[https://github.com/haxscramper/hasts][github]]
 - [[https://haxscramper.github.io/hasts-doc/src/hasts/graphviz_ast.html][documentation]]
 - [[https://nimble.directory/pkg/hasts][nimble package]]
-- [[https://discord.gg/hjfYJCU][discord server]]
 
 ** Usage
 
