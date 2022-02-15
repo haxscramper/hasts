@@ -1,4 +1,4 @@
-#+title: readme
+#+title: deprecated, functionality is moved to hmisc
 
 Statically typed wrappers for various markup lanuages - grapvhiz, svg,
 openscad, latex. Allows easier generation - library takes care of as
